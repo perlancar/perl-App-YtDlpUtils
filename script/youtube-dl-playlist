@@ -1,0 +1,55 @@
+#!perl
+
+# AUTHORITY
+# DATE
+# DIST
+# VERSION
+# FRAGMENT id=shcompgen-hint command=_youtube-dl
+
+use 5.010001;
+use strict;
+use warnings;
+
+system "youtube-dl", "-o", '%(playlist_index)s-%(title)s-%(id)s.%(ext)s', @ARGV;
+
+# PODNAME:
+# ABSTRACT: Download a playlist with youtube-dl
+
+=head1 SYNOPSIS
+
+ % youtube-dl-playlist https://www.youtube.com/playlist?list=PL8dPuuaLjXtPAJr1ysd5yGIyiSFuh0mIL
+
+
+=head1 DESCRIPTION
+
+This is a wrapper for B<youtube-dl> which does the following:
+
+=over
+
+=item * add track number prefix to filename
+
+The wrapper adds this option:
+
+ -o '%(playlist_index)s-%(title)s-%(id)s.%(ext)s'
+
+So instead of the default '%(title)s-%(id)s.%(ext)s' filename pattern like
+these:
+
+ Introduction to Astronomy: Crash Course Astronomy #1-0rHUDWjR5gg.mp4
+ Naked Eye Observations: Crash Course Astronomy #2-L-Wtlev6suc.mp4
+ Cycles in the Sky: Crash Course Astronomy #3-01QWC-rZcfE.mp4
+ ...
+
+you get:
+
+ 01-Introduction to Astronomy: Crash Course Astronomy #1-0rHUDWjR5gg.mp4
+ 02-Naked Eye Observations: Crash Course Astronomy #2-L-Wtlev6suc.mp4
+ 03-Cycles in the Sky: Crash Course Astronomy #3-01QWC-rZcfE.mp4
+ ...
+
+=back
+
+
+=head1 SEE ALSO
+
+Other youtube-dl wrappers in L<App::YoutubeDlUtils> and L<App::YoutubeDlIf>.

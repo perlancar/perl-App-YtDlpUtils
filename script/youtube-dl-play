@@ -1,0 +1,104 @@
+#!perl
+
+# AUTHORITY
+# DATE
+# DIST
+# VERSION
+# FRAGMENT id=shcompgen-hint command=_youtube-dl
+
+use 5.010001;
+use strict;
+use warnings;
+use Log::ger;
+use Log::ger::Screen;
+
+use CLI::Meta::YoutubeDl;
+use Getopt::Long qw(:config gnu_getopt no_ignore_case);
+use IPC::System::Options 'system', -log=>1, -die=>1;
+
+my $opts = $CLI::Meta::YoutubeDl::META->{opts};
+my @opts_for_youtube_dl;
+my @urls;
+Getopt::Long::GetOptions(
+    (map { my $optspec = $_; (my $opt = $optspec) =~ s#[|=].+##; $opt = length($opt) > 1 ? "--$opt" : "-$opt"; ($optspec => sub { push @opts_for_youtube_dl, $opt, ($optspec =~ /=/ ? ($_[1]) : ()) }); } keys %$opts),
+    '<>' => sub { push @urls, $_[0] },
+);
+
+unless (@urls) {
+    die "youtube-dl-play: Please specify one or more URLs\n";
+}
+
+for my $url (@urls) {
+    log_info "youtube-dl-play: Getting output filename for URL '%s' ...", $url;
+    my $filename;
+    system({capture_stdout=>\$filename}, "youtube-dl", @opts_for_youtube_dl, "--get-filename", $url);
+    chomp($filename);
+    system({shell=>1},
+           "youtube-dl", @opts_for_youtube_dl, "-o", "-", $url, \"|",
+           "tee", $filename, \"|",
+           "mpv", "-");
+}
+
+# PODNAME:
+# ABSTRACT: Download videos with youtube-dl *and* play them while downloading
+
+=head1 SYNOPSIS
+
+Usage:
+
+ % youtube-dl-play [OPTS] <URL_OR_VIDEO_ID>...
+
+Examples:
+
+ % youtube-dl-play       https://www.youtube.com/watch?v=hoKvtNawdS8
+ % youtube-dl-play -f 18 https://www.youtube.com/watch?v=hoKvtNawdS8 ;# force 360p mp4 format
+ % youtube-dl-play -f 22 https://www.youtube.com/watch?v=hoKvtNawdS8 ;# force 720p mp4 format
+
+
+=head1 DESCRIPTION
+
+You want to download a video but want to see it while it downloads (and of
+course do not want to download it twice)? This is a wrapper for B<youtube-dl>
+which does the following for each argument:
+
+=over
+
+=item * Run youtube-dl with --get-filename
+
+To get the output filename, first this is executed:
+
+ % youtube-dl [OPTS] --get-filename <URL_OR_VIDEO_ID>
+
+=item * Run youtube-dl that outputs to stdout and pipe it to mpv
+
+ % youtube-dl [OPTS] -o - <URL_OR_VIDEO_ID> | tee <OUTPUTFILENAME> | mpv -
+
+=back
+
+Some caveats:
+
+=over
+
+=item * The media-player program C<mpv> as well as the C<tee> utility are required
+
+=item * Each command-line argument must be a video ID or video URL, not a playlist URL
+
+=item * You should not request a format that does not stream
+
+For example, if you specify C<< -f 135+140 >> (merging of video-only 720p MP4
+and audio-only AAC stream) you will have to wait for C<youtube-dl> to download
+the whole video & audio streams and merge them before getting the video to play.
+
+=item * If you specify multiple URL's, you cannot go forward to the next video or backward to the previous
+
+In mpv you can use ">" or "ENTER" to go to the next video in the playlist, or
+"<" to go backward to the previous. You cannot do this using this script because
+the URLs are streamed individually one-by-one with separate invocation of
+youtube-dl and mpv.
+
+=back
+
+
+=head1 SEE ALSO
+
+Other youtube-dl wrappers in L<App::YoutubeDlUtils> and L<App::YoutubeDlIf>.
